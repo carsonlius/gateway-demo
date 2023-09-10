@@ -1,0 +1,137 @@
+spring:
+  profiles:
+    active: test
+logging:
+  level:
+    reactor.netty: DEBUG
+    org.springframework.cloud.gateway: TRACE
+---
+server:
+  port: 8008
+spring:
+  profiles: test
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.56.18:8848
+        namespace: a60273f4-07fb-4568-82eb-d078a3b02107
+      config:
+        server-addr: 192.168.56.18:8848
+        namespace: a60273f4-07fb-4568-82eb-d078a3b02107
+        group: DEFAULT_GROUP  # 默认分组就是DEFAULT_GROUP，如果使用默认分组可以不配置
+        file-extension: yml   #默认properties
+    sentinel:
+      transport:
+        dashboard: 192.168.56.18:8080 #配置Sentinel dashboard地址
+        port: 8719  #这个端口配置会在应用对应的机器上启动一个Http Server，该Server会与 Sentinel 控制台做交互
+      datasource:
+        flow:
+          nacos:
+            server-addr: 192.168.56.18:8848 #nacos的访问地址，，根据上面准备工作中启动的实例配置
+            dataId: cloud-sentinel-flow-service #nacos中存储规则的dataId
+            groupId: DEFAULT_GROUP #nacos中存储规则的groupId
+            namespace: a60273f4-07fb-4568-82eb-d078a3b02107 #Nacos 命名空间的ID
+            data-type: json #配置文件类型
+            rule-type: flow #类型来自RuleType类 - 流控规则
+        degrade:
+          nacos:
+            server-addr: 192.168.56.18:8848 #nacos的访问地址，，根据上面准备工作中启动的实例配置
+            dataId: cloud-sentinel-degrade-service #nacos中存储规则的dataId
+            groupId: DEFAULT_GROUP #nacos中存储规则的groupId
+            namespace: a60273f4-07fb-4568-82eb-d078a3b02107 #Nacos 命名空间的ID
+            data-type: json #配置文件类型
+            rule-type: degrade #类型来自RuleType类 - 熔断规则
+    gateway:
+      # 路由数组[路由 就是指定当请求满足什么条件的时候转到哪个微服务]
+      routes:
+        # 我们⾃定义的路由 ID，保持唯⼀
+        - id: gateway
+          # ⽬标服务地址（部署多实例）
+          uri: lb://gateway
+          # gateway⽹关从服务注册中⼼获取实例信息然后负载后路由
+          # 断⾔：路由条件，Predicate 接受⼀个输⼊参数，返回⼀个布尔值结果。该接⼝包含多种默认⽅法来将 Predicate 组合成其他复杂的逻辑（⽐如：与，或，⾮）。
+          predicates:
+            - Path=/gateway/api/**
+          filters:                       # 过滤器,请求在传递过程中可以通过过滤器对其进行一定的修改
+            - StripPrefix=2              # 转发之前去掉1层路径
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/gateway/user-service/**
+          filters:
+            - StripPrefix=2
+      # Reactor Netty 相关配置
+      httpserver:
+        wiretap: true
+      httpclient:
+        wiretap: true
+  application:
+    name: gateway
+---
+server:
+  port: 8008
+spring:
+  profiles: pre
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.56.18:8848
+        namespace: c60d2198-0b2f-46c1-82cb-4c2f20fb8123
+      config:
+        server-addr: 192.168.56.18:8848
+        namespace: c60d2198-0b2f-46c1-82cb-4c2f20fb8123
+        group: DEFAULT_GROUP  # 默认分组就是DEFAULT_GROUP，如果使用默认分组可以不配置
+        file-extension: yml   #默认properties
+    gateway:
+      # 路由数组[路由 就是指定当请求满足什么条件的时候转到哪个微服务]
+      routes:
+        - id: bi-cloud-oauth             # 当前路由的标识, 要求唯一
+          uri: lb://bi-cloud-oauth       # lb指的是从 nacos 中按照名称获取微服务,并遵循负载均衡策略
+          predicates:                    # 断言(就是路由转发要满足的条件)
+            - Path=/oauth/**             # 当请求路径满足Path指定的规则时,才进行路由转发
+        # 我们⾃定义的路由 ID，保持唯⼀
+        - id: bi-cloud-gateway
+          # ⽬标服务地址（部署多实例）
+          uri: lb://bi-cloud-gateway
+          # gateway⽹关从服务注册中⼼获取实例信息然后负载后路由
+          # 断⾔：路由条件，Predicate 接受⼀个输⼊参数，返回⼀个布尔值结果。该接⼝包含多种默认⽅法来将 Predicate 组合成其他复杂的逻辑（⽐如：与，或，⾮）。
+          predicates:
+            - Path=/bi-gateway/api/**
+          filters:                       # 过滤器,请求在传递过程中可以通过过滤器对其进行一定的修改
+            - StripPrefix=1              # 转发之前去掉1层路径
+  application:
+    name: bi-cloud-gateway
+---
+server:
+  port: 8008
+spring:
+  profiles: prd
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.56.18:8848
+        namespace: 0be74aa4-00e5-4c48-ae8c-34965c327212
+      config:
+        server-addr: 192.168.56.18:8848
+        namespace: 0be74aa4-00e5-4c48-ae8c-34965c327212
+        group: DEFAULT_GROUP  # 默认分组就是DEFAULT_GROUP，如果使用默认分组可以不配置
+        file-extension: yml   #默认properties
+    gateway:
+      # 路由数组[路由 就是指定当请求满足什么条件的时候转到哪个微服务]
+      routes:
+        - id: bi-cloud-oauth             # 当前路由的标识, 要求唯一
+          uri: lb://bi-cloud-oauth       # lb指的是从 nacos 中按照名称获取微服务,并遵循负载均衡策略
+          predicates:                    # 断言(就是路由转发要满足的条件)
+            - Path=/oauth/**             # 当请求路径满足Path指定的规则时,才进行路由转发
+        # 我们⾃定义的路由 ID，保持唯⼀
+        - id: bi-cloud-gateway
+          # ⽬标服务地址（部署多实例）
+          uri: lb://bi-cloud-gateway
+          # gateway⽹关从服务注册中⼼获取实例信息然后负载后路由
+          # 断⾔：路由条件，Predicate 接受⼀个输⼊参数，返回⼀个布尔值结果。该接⼝包含多种默认⽅法来将 Predicate 组合成其他复杂的逻辑（⽐如：与，或，⾮）。
+          predicates:
+            - Path=/bi-gateway/api/**
+          filters:                       # 过滤器,请求在传递过程中可以通过过滤器对其进行一定的修改
+            - StripPrefix=1              # 转发之前去掉1层路径
+  application:
+    name: bi-cloud-gateway
