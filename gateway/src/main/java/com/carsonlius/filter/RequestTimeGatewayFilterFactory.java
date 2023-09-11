@@ -1,5 +1,6 @@
 package com.carsonlius.filter;
 
+import com.carsonlius.utils.JsonUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -48,7 +49,7 @@ public class RequestTimeGatewayFilterFactory extends AbstractGatewayFilterFactor
                     StringBuilder logStr = new StringBuilder("耗时统计 " + exchange.getRequest().getURI().getPath());
                     logStr.append(":").append((System.currentTimeMillis() - startTime)).append("ms");
                     if (config.isWithParams()) {
-                        logStr.append(exchange.getRequest().getQueryParams());
+                        logStr.append(" 入参: ").append(exchange.getRequest().getQueryParams()).append(" post入参:").append(JsonUtils.toJson(exchange.getRequest().getBody()));
                     }
 
                     log.info(logStr.toString());
