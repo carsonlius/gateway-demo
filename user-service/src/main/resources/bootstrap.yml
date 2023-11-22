@@ -18,3 +18,12 @@ spring:
         namespace: a60273f4-07fb-4568-82eb-d078a3b02107 #Nacos 命名空间ID
         group: DEFAULT_GROUP  # 默认分组就是DEFAULT_GROUP，如果使用默认分组可以不配置
         file-extension: yml   #默认properties
+        extension-configs:
+          - data-id: common.yaml
+            refresh: true
+management:
+  endpoints:
+    # Actuator HTTP 配置项，对应 WebEndpointProperties 配置类
+    web:
+      exposure:
+        include: '*' # 需要开放的端点。默认值只打开 health 和 info 两个端点。通过设置 * ，可以开放所有端点。
